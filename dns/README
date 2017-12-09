@@ -1,0 +1,2 @@
+kubedns用来部署k8s的dns
+busybox用来测试dns是否配置成功
