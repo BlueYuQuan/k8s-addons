@@ -1,2 +1,68 @@
-kubedns用来部署k8s的dns
+# kubedns用来部署k8s的dns
+
+```
+root@master:/home/study/k8s-study/k8s-addons/dns/kubedns-a.3.1后版本2# kubectl create -f skydns-rc.yaml 
+replicationcontroller "kube-dns-v15" created
+root@master:/home/study/k8s-study/k8s-addons/dns/kubedns-a.3.1后版本2# kubectl create -f skydns-svc.yaml 
+service "kube-dns" created
+root@master:/home/study/k8s-study/k8s-addons/dns/kubedns-a.3.1后版本2# cd 
+root@master:~# ./kubeget.sh 
+kubectl get pods -o wide --all-namespaces
+NAMESPACE     NAME                                    READY     STATUS    RESTARTS   AGE       IP          NODE
+kube-system   kube-dns-v15-g7qrd                      2/3       Running   0          29s       10.1.7.2    node3
+kube-system   kubernetes-dashboard-1572137881-4gxft   1/1       Running   0          2m        10.1.67.2   node5
+kubectl get rc --all-namespaces
+NAMESPACE     NAME           DESIRED   CURRENT   READY     AGE
+kube-system   kube-dns-v15   1         1         0         29s
+kubectl get svc --all-namespaces
+NAMESPACE     NAME                   CLUSTER-IP     EXTERNAL-IP   PORT(S)         AGE
+default       kubernetes             192.168.3.1    <none>        443/TCP         15d
+kube-system   kube-dns               192.168.3.10   <none>        53/UDP,53/TCP   20s
+kube-system   kubernetes-dashboard   192.168.3.94   <nodes>       80:21654/TCP    2m
+kubectl get endpoints --all-namespaces
+NAMESPACE     NAME                      ENDPOINTS             AGE
+default       kubernetes                192.168.122.10:6443   15d
+kube-system   kube-controller-manager   <none>                15d
+kube-system   kube-dns                                        20s
+kube-system   kube-scheduler            <none>                15d
+kube-system   kubernetes-dashboard      10.1.67.2:9090        2m
+kubectl get namespaces 
+NAME          STATUS    AGE
+default       Active    15d
+kube-public   Active    15d
+kube-system   Active    15d
+
+```
 busybox用来测试dns是否配置成功
+```
+$ kubectl create -f busybox.yaml 
+pod "busybox" created
+```
+
+pod成功运行后，通过kubectl exec <容器Id> nslookup进行测试
+```
+$ kubectl exec busybox -- nslookup kubernetes
+Server:    192.168.3.10
+Address 1: 192.168.3.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      kubernetes
+Address 1: 192.168.3.1 kubernetes.default.svc.cluster.local
+```
+成功！
+
+如果测试的服务的命名空间不是default,那么一定要加上命名空间，不然会报下面的错误
+```
+$ kubectl exec busybox -- nslookup kube-dns
+nslookup: can't resolve 'kube-dns'
+Server:    192.168.3.10
+Address 1: 192.168.3.10 kube-dns.kube-system.svc.cluster.local
+```
+加上命名空间后
+```
+$ kubectl exec busybox -- nslookup kube-dns.kube-system
+Server:    192.168.3.10
+Address 1: 192.168.3.10 kube-dns.kube-system.svc.cluster.local
+
+Name:      kube-dns.kube-system
+Address 1: 192.168.3.10 kube-dns.kube-system.svc.cluster.local
+```
